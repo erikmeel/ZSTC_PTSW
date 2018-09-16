@@ -1,0 +1,438 @@
+<core:View xmlns:core="sap.ui.core" xmlns:mvc="sap.ui.core.mvc" 
+	xmlns="sap.m"
+	xmlns:html="http://www.w3.org/1999/xhtml"
+	xmlns:c="sap.ui.core"
+	xmlns:l="sap.ui.layout"
+	xmlns:f="sap.ui.layout.form"
+	controllerName="views.main">
+	<Page id="mainPage">
+		<!-- The CustomHeader describes the header of the main page and contains a logo and title.
+			 At the right side of the screen, the user name is displayed which is retrieved via function readUserInfo
+			 and launched via the onInit event. -->
+		<customHeader>
+			<Bar>
+				<contentLeft>
+					<Image src="assets/images/logo_inverted.png" height="45px" />
+				</contentLeft>
+				<contentMiddle>
+					<Label text="{i18n>MainHeaderPanelText}" class="sapUiResponsiveMargin appTitle"
+						width="auto" />
+				</contentMiddle>
+				<contentRight>
+					<Label text="{i18n>Welcome}" class="sapUiResponsiveMargin userInfo" width="30px" />
+					<Label text="{/userinfo/name}" class="sapUiResponsiveMargin userInfo" />
+				</contentRight>
+			</Bar>
+		</customHeader>
+		<content>
+			<!-- The dialog "addEquipmentDialog" is declared here, but is invisible at start-up.
+				 The dialog is displayed when user clicks on the "+" button behind the serial number in
+				 order to create a new Equipment. -->
+			<Dialog id="addEquipmentDialog" title="Create new equipment">
+				<beginButton>
+					<Button text="Create Equipment" press="onCreateEquipment" />
+				</beginButton>
+				<endButton>
+					<Button text="Cancel" press="onCancelEquipCreate"/>
+				</endButton>
+				<l:Grid hSpacing="1" class="sapUiSmallMarginTop">
+					<l:content>
+						<StandardListItem title="{i18n>CustomerName}" >
+							<layoutData>
+								<l:GridData span="L3 M3 S3"/>
+							</layoutData>
+						</StandardListItem>
+						<HBox>
+							<layoutData>
+								<l:GridData span="L4 M4 S4"/>
+							</layoutData>
+							<items>
+								<Input id="idNewCustomerInput" value="{/sold_to_new}" valueLiveUpdate="true" width="100%"
+									liveChange="onNewCustomerInputChange" toolTip="Type a customer name" visible="true"/>
+								<ComboBox id="idNewCustomerCombo" toolTip="select customer..." width="100%"
+									visible="false" selectionChange="onNewCustomerInputChange" change="onChangeNewCustomer" items="{/new_customers}">
+									<items>
+										<c:ListItem text="{name}" tooltip="{city}" key="{id}"/>
+									</items>
+								</ComboBox>
+							</items>
+						</HBox>
+						<!-- The Customer ID is displayed when a customer is found. This is not an input of user. -->
+						<StandardListItem id="idNewCustId" title="ID:">
+							<layoutData>
+								<l:GridData span="L3 M3 S3"/>
+							</layoutData>
+						</StandardListItem>
+						<StandardListItem title="{i18n>SerialNumber}">
+							<layoutData>
+								<l:GridData span="L3 M3 S3"/>
+							</layoutData>
+						</StandardListItem>
+						<Input id="idNewSerialNr" value="{/serial_number_new}" valueLiveUpdate="true" width="150px"
+							liveChange="onNewSerialChange">
+							<layoutData>
+								<l:GridData span="L3 M9 S9"></l:GridData>
+							</layoutData>
+						</Input>
+						<StandardListItem title="{i18n>ReferenceEquipment}">
+							<layoutData>
+								<l:GridData span="L3 M3 S3"/>
+							</layoutData>
+						</StandardListItem>
+						<ComboBox id="idRefEquip" items="{/equipmentList}" selectionChange="onChangeRefEquipment">
+							<layoutData>
+								<l:GridData span="L3 M9 S9"/>
+							</layoutData>
+							<items>
+								<c:ListItem text="{serial_number}" toolTip="{description}" key="{id}"/>
+							</items>
+						</ComboBox>
+						<StandardListItem title="{i18n>Material}">
+							<layoutData>
+								<l:GridData span="L3 M3 S3"/>
+							</layoutData>
+						</StandardListItem>
+						<HBox>
+							<layoutData>
+								<l:GridData span="L3 M3 S3"></l:GridData>
+							</layoutData>
+							<items>
+								<Input id="idNewMaterialNr" value="{/newmaterial}" valueLiveUpdate="true" maxLength="10" width="150px"
+									liveChange="onMaterialChange" visible="{/entermaterial}">
+								</Input>
+								<ComboBox id="idNewMaterialNrCombo" toolTip="Select material..." items="{/materialList}"
+									showSecondaryValues="true" visible="{/selectmaterial}" selectionChange="onMaterialChange"> 	
+									<items>
+										<c:ListItem text="{id}" additionalText="{description}" key="{id}"/>
+									</items>						
+								</ComboBox>
+							</items>
+						</HBox>
+						<StandardListItem title="{/material/description}" adaptTitleSize="false">
+							<layoutData>
+								<l:GridData span="L5 M5 S5"/>
+							</layoutData>
+						</StandardListItem>
+						<StandardListItem title="{i18n>Description}">
+							<layoutData>
+								<l:GridData span="L3 M3 S3"/>
+							</layoutData>
+						</StandardListItem>
+						<Input id="idNewEquipDescr" value="{/newdescription}" valueLiveUpdate="true" liveChange="onDescriptionChange" maxLength="40" width="350px">
+							<layoutData>
+								<l:GridData span="L7 M7 S7"/>
+							</layoutData>
+						</Input>
+					</l:content>
+				</l:Grid>
+			</Dialog>
+			<!-- The IconTabBar allows to search for equipment (IconTabFilter = idSearchForm) and to 
+			     show a list of all equipment which are currently in the workshop (IconTabFilter = idEquipmentInWorkshop).
+			     An equipment is in the workshop if it has status ZCHI, ZINS, ZRFS -->
+			<IconTabBar id="idMainIconBar" select="onSelectWorkshopList" expandable="false" expanded="true">
+				<items>
+					<IconTabFilter id="idSearchForm" text="{i18n>EquipmentSearchIconBarText}">
+						<!-- The Search Form will allow entry of serial number. If a serial number is found, then
+							 the customer is also filled in as well as description, status and warranty.
+							 When an equipment is found, the customer entry becomes read-only. -->
+						<l:Grid hSpacing="1" class="sapUiSmallMarginTop">
+							<l:content>
+								<StandardListItem title="{i18n>SerialNumber}">
+									<layoutData>
+										<l:GridData span="L2 M6 S6"/>
+									</layoutData>
+								</StandardListItem>
+								<HBox>
+									<layoutData>
+										<l:GridData span="L3 M6 S6"></l:GridData>
+									</layoutData>
+									<items>
+										<Input id="idSerialNr" value="{/equipment/serial_number}" valueLiveUpdate="true" width="150px"
+											liveChange="onSerialChange">
+										</Input>
+										<Button icon="sap-icon://add" press="onAddEquipment" class=" sapThemeHighlight-asBackgroundColor " tooltip="Create new equipment"/>
+									</items>
+								</HBox>
+								
+								<StandardListItem title="{i18n>Equipment}">
+									<layoutData>
+										<l:GridData span="L2 M6 S6"/>
+									</layoutData>
+								</StandardListItem>
+								<StandardListItem title="{/equipment/description}">
+									<layoutData>
+										<l:GridData span="L5 M6 S6"/>
+									</layoutData>
+								</StandardListItem>
+								<StandardListItem title="{i18n>CustomerName}">
+									<layoutData>
+										<l:GridData span="L2 M6 S6"/>
+									</layoutData>
+								</StandardListItem>
+								<HBox>
+									<layoutData>
+										<l:GridData span="L3 M6 S6"/>
+									</layoutData>
+									<items>
+									<!-- When entering a customer name, a search is done in the system (if length of customer name
+										 is more than 4 characters.
+										 If customers are found, then the InputBox is replaced by a ComboBox and user can then
+										 select a customer from the list.
+										 When a customer is selected, a list of equipment belonging to that customer is shown. -->
+										<Input id="idCustomerInput" value="{/equipment/sold_to_name}" valueLiveUpdate="true" toolTip="Enter customer name"
+											liveChange="onCustomerInputChange" visible="true"/>
+										<ComboBox id="idCustomerCombo" toolTip="select customer..."
+											visible="false" selectionChange="customerDropDownChange">
+											<items>
+												<c:ListItem text="{vkorg}" tooltip="{spart}" key="{id}"/>
+											</items>
+										</ComboBox>
+										<ComboBox id="idCountry" items="{/countries}" selectedKey="{/country}" toolTip="Select country of customer">
+											<layoutData>
+												<l:GridData span="L2 M6 S6"/>
+											</layoutData>
+											<items>
+												<c:ListItem text="{country}" key="{id}" toolTip="Select country of customer"/>
+											</items>
+										</ComboBox>
+									</items>
+								</HBox>	
+								<StandardListItem title="{i18n>CurrentEquipmentState}">
+									<layoutData>
+										<l:GridData span="L1 M1 S6"/>
+									</layoutData>
+								</StandardListItem>
+								<!-- The idCurrentState shows the status of equipment, if known. -->
+								<StandardListItem id="idCurrentState" title="{/equipment/checked_in}">
+									<layoutData>
+										<l:GridData span="L2 M2 S6"/>
+									</layoutData>
+								</StandardListItem>
+								<StandardListItem title="{i18n>EquipmentWarranty}">
+									<layoutData>
+										<l:GridData span="L2 M2 S6"/>
+									</layoutData>
+								</StandardListItem>
+								<!-- The idEquipWarr shows the Vendor Warrenty end date if available.
+									 If the warranty is still valid, the date is written in Green, otherwise in Red. -->
+								<StandardListItem id="idEquipWarr" title="{/equipment/vendor_warranty_end}">
+									<layoutData>
+										<l:GridData span="L2 M2 S6"/>
+									</layoutData>
+								</StandardListItem>
+							</l:content>
+						</l:Grid>
+					</IconTabFilter>
+					<IconTabFilter id="idEquipInWorkshop" text="{i18n&gt;EquipmentCheckedIn}">
+						<FlexBox id="idFlexWorkshop" justifyContent="Center" visible="true">
+							<items>
+							<!-- We use a ScrollContainer to have a scrollbar within a certain area of the screen.
+							     This will keep the header of the page, as well as footer always visible. -->
+								<ScrollContainer id="idWorkshopContainer" width="80%" height="500px" vertical="true">
+									<!-- For some reason, the noDataText is not displayed if there are no records found. -->
+									<Table noDataText="No data available"  id="TableEquipmentWorkshop" items="{/equipmentWorkshopList}">
+										<items>
+											<ColumnListItem>
+												<cells>
+													<Link text="{serial_number}" id="idWorkListSerialNr" press="selectSerialNr"/>
+													<Text text="{description}" />
+													<Text text="{installed_at_name}" />
+													<Text text="{status}" />
+												</cells>
+											</ColumnListItem>
+										</items>
+										<columns>
+											<Column width="2em">
+												<header>
+													<Text text="{i18n>SerialNumber}"/>
+												</header>
+											</Column>					
+											<Column width="4em">
+												<header>
+												<Text text="{i18n>Description}"/>
+											</header>
+											</Column>
+											<Column width="5em">
+												<header>
+												<Text text="{i18n>CustomerName}"/>
+											</header>
+											</Column>
+											<Column width="2em">
+												<header>
+												<Text text="{i18n>CurrentEquipmentState}"/>
+											</header>
+											</Column>
+										</columns>
+									</Table>
+								</ScrollContainer>
+							</items>
+						</FlexBox>
+					</IconTabFilter>
+				</items>
+			</IconTabBar>
+			<!-- The IconTabBar idSubIconBar becomes visible if an equipment has been found(=selected). -->
+			<IconTabBar id="idSubIconBar" visible="{/equipmentfound}" select="onSubIconBarSelect">
+				<items>
+					<!-- The IconTabFilter idServiceFlow allows user to enter an Arrival date/time (with date/time picker),
+						 enter a description (with pre-filled text) and change equipment status and/or start a service flow. -->
+					<IconTabFilter id="idServiceFlow" text="Service Flow" visible="{/equipmentfound}">
+						<l:Grid defaultSpan="L6 M6 S12">
+							<l:content>
+								<StandardListItem title="Arrival date/time:">
+									<layoutData>
+										<l:GridData span="L2 M6 S6"/>
+									</layoutData>
+								</StandardListItem>
+								<DateTimePicker
+									id="dtpArrivalDateTime"	displayFormat="yyyy-MM-dd HH:mm" 
+									valueFormat="yyyy-MM-dd HH:mm"
+									placeholder="Select arrival date and time...">
+									<layoutData>
+										<l:GridData span="L5 M6 S6"/>
+									</layoutData>
+								</DateTimePicker>
+								<TextArea id="idNotifText" rows="10" width="100%" maxLength="500"
+									value="Damage:&#13;&#13;Transport Company:&#13;Driver:&#13;License Plate:&#13;LOT:">
+									<layoutData>
+										<l:GridData span="L6 M8 S12"/>
+									</layoutData>
+								</TextArea>
+								<l:Grid defaultSpan="L7 M6 S6">
+									<l:content>
+										<!-- The text of button idBtnCheckin is based on the model property {/checkinButton} which
+										     is set in the controller based on current status of the equipment.
+										     Clicking the button triggers changes of user status of equipment and/or
+										     the creation of a Service Flow. -->
+										<Button id="idBtnCheckin" type="Emphasized" text="{/checkinButton}" press="onCheckInEquipment" >
+											<layoutData>
+												<l:GridData span="L3 M12 S12"/>
+											</layoutData>
+										</Button>
+										<!-- A checkbox idWarrCheck becomes only visible if the warranty is still valid.
+										     The user can uncheck the warranty after which the price input is needed in order
+										     to start a service flow. -->
+										<CheckBox id="idWarrCheck" text="Warranty" selected="true" visible="{/equipment/warranty_valid}" select="onChangeWarrantyCheck"
+											tooltip="{i18n>WarrantyCheckToolTip}">
+											<layoutData>
+												<l:GridData span="L3 M6 S6"/>
+											</layoutData>
+										</CheckBox>
+										<StandardListItem title="Fixed Price:">
+											<layoutData>
+												<l:GridData span="L3 M6 S6"/>
+											</layoutData>
+										</StandardListItem>
+										<!-- The Input idFixedPriceValue is disabled, except if the equipment is Checked In and
+										     ready to start a service flow. When the warranty checkbox is selected, the price
+										     input is disabled. -->
+										<Input id="idFixedPriceValue" placeholder="Price" tooltip="Enter price for order" description="LCU" enabled="false" liveChange="onInputFPPriceChange">
+											<layoutData>
+												<l:GridData span="L3 M6 S6"/>
+											</layoutData>
+										</Input>
+										<!-- The Label and Input for e-mail becomes visible when the equipment is ready to start
+										     a service flow.
+										     The e-mail address needs to be passed to the back-end to trigger an e-mail when the
+										     notification is created. TO DO: built functionality -->
+										<StandardListItem id="idLabelMailTo" title="Send info to:" visible="false">
+											<layoutData>
+												<l:GridData span="L3 M6 S6"/>
+											</layoutData>
+										</StandardListItem>
+										<Input id="idSendMailTo" placeholder="e-mail" value="{/mailto}" visible="false" tooltip="Send e-mail to user to inform about order creation and check-in" liveChange="onInputMailChange">
+											<layoutData>
+												<l:GridData span="L4 M6 S6"/>
+											</layoutData>
+										</Input>
+									</l:content>
+								</l:Grid>
+							</l:content>
+						</l:Grid>
+					</IconTabFilter>
+					<!-- IconTabFilter idEquipmentList will show all other equipment belonging to same customer (Sold-to).
+						 When the user clicks on a serial number, this number is then used to select the equipment and 
+						 refresh other controls. -->
+					<IconTabFilter id="idEquipmentList" text="{i18n>EquipmentOnLocation}">
+						<FlexBox id="idFlexEquipment" justifyContent="Center" visible="false">
+							<layoutData>
+								<l:GridData span="L6 M12 S12"/>
+							</layoutData>
+							<items>
+								<!-- The ScrollContainer is used to keep page header and footer visible and allow scrolling of
+									 the list itself. -->
+								<ScrollContainer id="idSelectContainer" width="80%" height="500px" vertical="true">
+									<Table id="TableEquipment" items="{/equipmentList}">
+										<items>
+											<ColumnListItem>
+												<cells>
+													<Link text="{serial_number}" press="onSelectSerialNr"/>
+													<Text text="{description}" />
+												</cells>
+											</ColumnListItem>
+										</items>
+										<columns>
+											<Column>
+												<header>
+													<Text text="{i18n>SerialNumber}"/>
+												</header>
+											</Column>					
+											<Column>
+												<header>
+												<Text text="{i18n>Description}"/>
+											</header>
+											</Column>
+										</columns>
+									</Table>
+								</ScrollContainer>
+							</items>
+						</FlexBox>
+					</IconTabFilter>
+					<!-- The IconTabFilter idOrderList is not yet developed. But it has the intention to list all open orders
+					     for a specific equipment or for all equipment currently in workshop. -->
+					<IconTabFilter id="idOrderList" text="Orders" visible="false">
+						<f:SimpleForm title="{i18n>serviceDetailPanelText}">
+							<f:content>
+								<Table noDataText="No data available" id="TableOrders" items="{/Orders}">
+									<items>
+										<ColumnListItem counter="0">
+											<cells>
+												<Text text="{ordernr}"></Text>
+											</cells>
+										</ColumnListItem>
+									</items>
+									<columns>
+										<Column sortProperty="ordernr" filterProperty="ordernr">
+											<header>
+												<Text text="Order" />
+											</header>
+										</Column>
+									</columns>
+								</Table>
+							</f:content>
+						</f:SimpleForm>
+					</IconTabFilter>
+				</items>
+			</IconTabBar>
+		</content>
+		<!-- The following footer section describes the content of the bottom of the screen.
+			 The footer becomes only visible when an equipment is selected. -->
+		<footer>
+			<Bar>
+				<contentLeft>
+					<Label text="{i18n>SerialNumber}" class="sapUiSmallMargin"/>
+					<Label text="{/equipment/serial_number_id}"/>
+				</contentLeft>
+				<contentMiddle>
+					<Label text="{/equipment/description}"/>
+				</contentMiddle>
+				<contentRight>
+					<Label text="{i18n>CustomerName}" class="sapUiSmallMargin"/>
+					<Label text="{/equipment/sold_to_name}"/>
+					<Label text="(SAP id: "/>
+					<Label text="{/equipment/sold_to}"/>
+					<Label text=")"/>
+				</contentRight>
+			</Bar>
+		</footer>
+	</Page>
+</core:View>

@@ -1,0 +1,32 @@
+<core:FragmentDefinition
+	xmlns="sap.m"
+	xmlns:core="sap.ui.core">
+	<TableSelectDialog
+		noDataText="No sales areas Found"
+		title="Select Sales Area"
+		search="handleSearch"
+		confirm="handleClose"
+		cancel="handleClose"
+		items="{
+			path : '/userinfo/sales_areas',
+		}">
+		<ColumnListItem>
+			<cells>
+				<Text text="{vkorg}" />
+				<Text text="{spart}" />
+			</cells>
+		</ColumnListItem>
+		<columns>
+			<Column width="12em">
+				<header>
+					<Text text="Sales Org" />
+				</header>
+			</Column>
+			<Column>
+				<header>
+					<Text text="Brand" />
+				</header>
+			</Column>
+		</columns>
+	</TableSelectDialog>
+</core:FragmentDefinition>

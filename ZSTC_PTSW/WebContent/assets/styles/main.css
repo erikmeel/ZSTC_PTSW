@@ -1,0 +1,52 @@
+body {
+	
+}
+
+.sapMIBar.sapMHeader-CTX {
+	color: #ffffff;
+	background-color: #0099cc;
+	filter:none;
+	background-image:none;
+	height: 60px;
+	padding-top:10px;
+	
+}
+
+.appTitle {
+	font-size: 25px;
+	color: #ffffff!important;
+}
+
+.userInfo {
+	color: #ffffff!important;
+}
+
+.flexDateTime {
+	font-size:14px;
+	text-align:center!important;
+	color: #ffffff!important;
+}
+
+.labelDescription  {
+	padding-top:5px;
+	font-size: 0.825rem!important;
+	flex:auto;
+	text-overflow: ellipsis;
+	white-space:nowrap;
+}
+
+.InfoStateRed .sapMSLITitleOnly {
+	color: #cc0000!important;
+}
+
+.InfoStateGreen .sapMSLITitleOnly {
+	color: #008000!important;
+}
+
+.box .sapMFlexBox {
+	color:#0099cc!important;
+}
+.sapUiGlobalBackgroundColor, .sapMGlobalBackgroundColor {
+	color: #ffffff;
+	background-image: linear-gradient(to bottom,#c9c9c9 0,#dcecf0 50%,#dde4eb 100%);
+}
